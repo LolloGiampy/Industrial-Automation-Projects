@@ -6,9 +6,9 @@ clc;
 H = 24 * 60 * 60; % [s]
 
 %thermal transmittence by a single glazing
-t_t = 5.7; %[W/(m2⋅K)]
+t_t = 5.7; %[W/(m^2⋅K)]
 %Area of the walls of module 1 heating from external temperature
-Sm1_ext = (50 + 50 + 10)*3 + 50 * 10; %[m2]
+Sm1_ext = (50 + 50 + 10)*3 + 50 * 10; %[m^2]
 %Area of the wall in common
 Sm_int = 10 * 3; %[m2]
 %Area of the walls of module 2 heating from external temperature
@@ -21,16 +21,22 @@ c_f = 1005;% [J/(Kg*K)]
 m_f1 = 1225 * (50*10*3); %[Kg]
 %and module 2
 m_f2 = 1225 * (10*10*4);
-%average thermal capacity of the mass of the air in the box
+%average thermal capacity of the mass of the air in the greenhouse modules,
+%1 and 2 respectively
 C_f1 = c_f * m_f1;
 C_f2 = c_f * m_f2; %[J/K]
 %Overall thermal transmittence between the air and 
 %the external environment
 kaf1 = t_t * Sm1_ext;
-kaf2 = t_t * Sm2_ext;
-%Overall thermal transmittence between the air and 
-%the internal environment
+kaf2 = t_t * Sm2_ext; %[W/K]
+%Overall thermal transmittence between the air inside the two modules
 kaf_int = t_t * Sm_int;
+
+% Additive first module "air" noise variance
+var_wf1 = 1;
+
+% Additive second module "air" noise variance
+var_wf2 = 1;
 
 %load the extracted data
 load('ExtractedData.mat');
