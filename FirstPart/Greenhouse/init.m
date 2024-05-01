@@ -49,4 +49,8 @@ timeseriesextK = timeseries(extK', time.*(60*60)');
 timeseriestrackK = timeseries(trackK', time.*(60*60)');
 timeseriesradiation = timeseries(radiation'*0.95, time.*(60*60)');
 
+% Initial theta_a
+theta0_a = 100;
 
+% Sample time
+Ts = 1;%[s]
