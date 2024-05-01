@@ -16,7 +16,7 @@ Sm2_ext = (10 + 10 + 10)*4 + 10 * 10 + 10; %[m2]
 
 %air thermal capacity
 c_f = 1005;% [J/(Kg*K)]
-%mass forumla = density * volume
+%mass formula = density * volume
 %mass of the air in module 1   
 m_f1 = 1225 * (50*10*3); %[Kg]
 %and module 2
