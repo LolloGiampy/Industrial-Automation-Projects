@@ -21,7 +21,7 @@ c_f = 1005;% [J/(Kg*K)]
 m_f1 = 1225 * (50*10*3); %[Kg]
 %and module 2
 m_f2 = 1225 * (10*10*4);
-%average thermal capacity of the mass of the air in the greenhouse modules,
+%average thermal cap  ir in the greenhouse modules,
 %1 and 2 respectively
 C_f1 = c_f * m_f1;
 C_f2 = c_f * m_f2; %[J/K]
