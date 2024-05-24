@@ -58,11 +58,11 @@ theta0_a = 291;
 Ts = 1;%[s]
 
 %% Point 3a)
-q_star_m1 = 25000; %[W]
-q_star_m2 = 15000; %[W]
+q_star_m1 = 25000*4; %[W]
+q_star_m2 = 15000*4; %[W]
 
 %% Point 3b)
-qMAX_m1 = 25000;
-qmin_m1 = -25000;
-qMAX_m2 = 15000;  
-qmin_m2 = -15000;
+qMAX_m1 = 25000*4;
+qmin_m1 = -25000*4;
+qMAX_m2 = 15000*4;  
+qmin_m2 = -15000*4;
