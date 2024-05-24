@@ -1,0 +1,56 @@
+Esercizio greenhouse
+
+glass thermal transmittence=5.7W/(m2K)
+1.
+define a model:
+-forecast external temperature
+-forecast sun radiation, 95% pass rest reflected
+
+2.
+verify the model
+
+3.
+
+
+
+[W/K] * K = W
+[kJ/K] * K = W  perchè derivata
+
+average thermal capacity of the air in the greenhouse * derivative of the temperature in the greenhouse = overall thermal transmittance between the air in the greenhouse and the external environment * (Ta - Tf)
+
+c_f * d/dt (tetaf1(t)) = kaf1 * (teta_a(t) - tetaf1(t)) + kaf_int(tetaf2(t)-tetaf1(t)) + w_f1(t)
+c_f * d/dt (tetaf2(t)) = kaf2 * (teta_a(t) - tetaf2(t)) + kaf_int(tetaf1(t)-tetaf2(t)) + w_f2(t)
+
+
+Legend:
+c_f : average thermal capacity of the air (f stands for fluid)
+m_f1 : mass of air in module 1
+m_f2 : mass of air in module 2
+C_f1 : average thermal capacity of the mass of air in module 1
+C_f2 : average thermal capacity of the mass of air in module 2
+kaf1 : overall thermal trasmittance between the air in module 1 and the external environment
+kaf2 : overall thermal trasmittance between the air in module 2 and the external environment
+kaf_int : overall thermal transmittence between the air inside the two modules
+tetaf1(t) : temperature of the air in module 1
+tetaf2(t) : temperature of the air in module 2
+teta_a(t) : temperature of the air outsite the modules
+var_wf1 : additive first module "air" noise variance
+var_wf2 : additive second module "air" noise variance
+
+
+
+Per calcolare i contributi alla temperatura dovuti alla radiazione solare nei moduli, puoi utilizzare la formula della potenza assorbita per unità di area (
+𝑃
+=
+𝐴
+⋅
+𝐼
+P=A⋅I), dove 
+𝑃
+P è la potenza assorbita, 
+𝐴
+A è l'area esposta al sole e 
+𝐼
+I è l'intensità della radiazione solare.
+
+
