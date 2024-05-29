@@ -55,7 +55,7 @@ timeseriestrack_m2K = timeseries(track_m2K', time.*(60*60)');
 theta0_a = 291;
 
 % Sample time
-Ts = 1;%[s]
+Ts = 2;%[s]
 
 %% Point 3a)
 q_star_m1 = 25000*4; %[W]
