@@ -66,3 +66,50 @@ qMAX_m1 = 25000*4;
 qmin_m1 = -25000*4;
 qMAX_m2 = 15000*4;  
 qmin_m2 = -15000*4;
+
+%% Point 4)
+% model name
+model_relay = 'Greenhouse_4thPoint_Relay'; 
+model_pid = 'Greenhouse_4thPoint_PID';
+% 24 hours simulation time
+simTime = 24*60*60; 
+% run the simulation
+simOutRelay = sim(model_relay, 'StopTime', num2str(simTime));
+simOutPID = sim(model_pid, 'StopTime', num2str(simTime));
+% acquire simulation data output
+desiredTempM1 = simOutRelay.get('desiredTempM1');
+measuredTempRelayM1 = simOutRelay.get('measuredTempRelayM1');
+desiredTempM2 = simOutRelay.get('desiredTempM2');
+measuredTempRelayM2 = simOutRelay.get('measuredTempRelayM2');
+measuredTempPIDM1 = simOutPID.get('measuredTempPIDM1');
+measuredTempPIDM2 = simOutPID.get('measuredTempPIDM2');
+powerM1Relay = simOutRelay.get('powerM1Relay');
+powerM2Relay = simOutRelay.get('powerM2Relay');
+
+
+% extract 
+desiredTempM1_values = desiredTempM1.Data;
+desiredTempM2_values = desiredTempM2.Data;
+measuredTempRelayM1_values = measuredTempRelayM1.Data;
+measuredTempRelayM2_values = measuredTempRelayM2.Data;
+measuredTempPIDM1_values = measuredTempPIDM1.Data;
+measuredTempPIDM2_values = measuredTempPIDM2.Data;
+powerM1Relay_values = powerM1Relay.Data;
+powerM2Relay_values = powerM2Relay.Data;
+
+%for i = 1:length(desiredTempM1_values)
+%    fprintf('Temperature: %.2f \n', desiredTempM1_values(i));
+%end
+
+% compute mean square error
+mseM1_relay = mse(desiredTempM1_values, measuredTempRelayM1_values);
+mseM2_relay = mse(desiredTempM2_values, measuredTempRelayM2_values);
+mseM1_PID = mse(desiredTempM1_values, measuredTempPIDM1_values);
+mseM2_PID = mse(desiredTempM2_values, measuredTempPIDM2_values);
+
+fprintf('MSE of Module 1 using relay: %2f \n', mseM1_relay);
+fprintf('MSE of Module 2 using relay: %2f \n', mseM2_relay);
+fprintf('MSE of Module 1 using PID: %2f \n', mseM1_PID);
+fprintf('MSE of Module 2 using PID: %2f \n', mseM2_PID);
+
+energyM1 = trapz(time_values, heatingPowerM1_values);
