@@ -1,10 +1,8 @@
-function [mse] = mse(expectedTemp,measuredTemp)
-    % this function computes the mean square error between two arrays of
-    % numbers (in this case temperatures of our modules) 
-    sumOfValues = 0;
-    for i = 1:length(expectedTemp)
-        sumOfValues = sumOfValues + (expectedTemp(i) - measuredTemp(i)).^2;
-    end
-    mse = sumOfValues/length(expectedTemp);
+function mse = mse(eTempModule)
+%MSECHEESETEMPERATURE Compute the Mean Square Error (MSE) of the module 
+% temperature with respect to the desired one
+%Input
+% eTempModule : error of the module temperature with respect to the desired
+% one over the simulation horizon
+mse = mean((eTempModule).^2);
 end
-

@@ -103,15 +103,10 @@ qM1PID_values = qM1PID.Data;
 qM2PID_values = qM2PID.Data;
 
 % compute mse
-mseM1Relay = mse(eTempM1Relay_values);
-mseM2Relay = mse(eTempM2Relay_values);
-mseM1PID = mse(eTempM1PID_values);
-mseM2PID = mse(eTempM2PID_values);
-
-fprintf('MSE module 1 relay: %f \n', mseM1Relay);
-fprintf('MSE module 2 relay: %f \n', mseM2Relay);
-fprintf('MSE module 1 PID: %f \n', mseM1PID);
-fprintf('MSE module 2 PID: %f \n', mseM2PID);
+disp(mse(eTempM1Relay_values));
+disp(mse(eTempM2Relay_values));
+disp(mse(eTempM1PID_values));
+disp(mse(eTempM2PID_values));
 
 % compute energy consumption
 energyM1Relay = EnergyConsumption(qM1Relay_values);
@@ -126,6 +121,13 @@ fprintf('Energy module 1 relay: %f \n', energyM1Relay);
 fprintf('Energy module 2 relay: %f \n', energyM2Relay);
 fprintf('Energy module 1 PID: %f \n', energyM1PID);
 fprintf('Energy module 2 PID: %f \n', energyM2PID);
-fprintf('Total energy relay: %f \n', totalEnergyRelay);
-fprintf('Total energy PID: %f \n', totalEnergyPID);
+fprintf('Total energy relay: %f \n', totalEnergyM2PID);
+fprintf('Total energy PID: %f \n', energyM2PID);
 
+
+disp(energyM1Relay);
+disp(energyM2Relay);
+disp(energyM1PID);
+disp(energyM2PID);
+disp(totalEnergyRelay);
+disp(totalEnergyPID);
