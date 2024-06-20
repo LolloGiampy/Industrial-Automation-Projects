@@ -1,5 +1,5 @@
 function mse = mse(eTempModule)
-%MSECHEESETEMPERATURE Compute the Mean Square Error (MSE) of the module 
+%Compute the Mean Square Error (MSE) of the module 
 % temperature with respect to the desired one
 %Input
 % eTempModule : error of the module temperature with respect to the desired

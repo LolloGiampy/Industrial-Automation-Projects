@@ -113,19 +113,52 @@ fprintf('MSE module 2 relay: %f \n', mseM2Relay);
 fprintf('MSE module 1 PID: %f \n', mseM1PID);
 fprintf('MSE module 2 PID: %f \n', mseM2PID);
 
+% mse graph plotting
+mse_values = [mseM1Relay, mseM2Relay, mseM1PID, mseM2PID];
+mse_categories = {'M1 Relay', 'M2 Relay', 'M1 PID', 'M2 PID'};
+
+figure;
+bar(mse_values);
+set(gca, 'XTickLabel', mse_categories);
+xlabel('Modules and controls');
+ylabel('Mean Square Error (MSE)');
+title('Mean Square Error (MSE) for Different Modules and controls');
+
 % compute energy consumption
 energyM1Relay = EnergyConsumption(qM1Relay_values);
 energyM2Relay = EnergyConsumption(qM2Relay_values);
 energyM1PID = EnergyConsumption(qM1PID_values);
 energyM2PID = EnergyConsumption(qM2PID_values);
 
-totalEnergyRelay = energyM1Relay + energyM2Relay;
-totalEnergyPID = energyM1PID + energyM2PID;
+totalEnergyRelay = (energyM1Relay*24) + (energyM2Relay*24);
+totalEnergyPID = (energyM1PID*24) + (energyM2PID*24);
 
-fprintf('Energy module 1 relay: %f \n', energyM1Relay);
-fprintf('Energy module 2 relay: %f \n', energyM2Relay);
-fprintf('Energy module 1 PID: %f \n', energyM1PID);
-fprintf('Energy module 2 PID: %f \n', energyM2PID);
-fprintf('Total energy relay: %f \n', totalEnergyRelay);
-fprintf('Total energy PID: %f \n', totalEnergyPID);
+% average hour consumption graph plotting
+energy_values = [energyM1Relay, energyM2Relay, energyM1PID, energyM2PID]/1000;
+energy_categories = {'M1 Relay', 'M2 Relay', 'M1 PID', 'M2 PID'};
+
+figure;
+bar(energy_values);
+set(gca, 'XTickLabel', energy_categories);
+xlabel('Modules and controls');
+ylabel('KW/h energy consumption');
+title('KW/h energy consumption for Different Modules and Methods');
+
+% average daily total energy consumption with relay and PID
+total_energy_values = [totalEnergyRelay, totalEnergyPID]/1000000;
+total_energy_categories = {'Relay', 'PID'};
+
+figure;
+bar(total_energy_values);
+set(gca, 'XTickLabel', total_energy_categories);
+xlabel('Modules and controls');
+ylabel('Daily energy consumption GW');
+title('Daily energy consumption in GW for Different Modules and Methods');
+
+fprintf('Average energy module 1 relay: %f W/h\n', energyM1Relay);
+fprintf('Average energy module 2 relay: %f W/h\n', energyM2Relay);
+fprintf('Average energy module 1 PID: %f W/h\n', energyM1PID);
+fprintf('Average energy module 2 PID: %f W/h\n', energyM2PID);
+fprintf('Average daily total energy relay: %f W\n', totalEnergyRelay);
+fprintf('Average daily total energy relay: %f W\n', totalEnergyPID);
 
