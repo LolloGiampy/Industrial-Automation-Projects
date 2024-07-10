@@ -1,4 +1,4 @@
-function optimize_job_scheduling()
+function scheduling()
     % Job processing times
     processing_times = [
         5, 3, 6, 8, 4, 12, 12, 5, 3, 2;    % M1
@@ -8,61 +8,86 @@ function optimize_job_scheduling()
         2, 6, 2, 1, 5, 13, 2, 7, 18, 3     % M5
     ];
 
-    % Number of jobs and machines
+    % Number of jobs
     num_jobs = size(processing_times, 2);
 
-    % Decision variables: x(i,j) = 1 if job j is assigned to path i, 0 otherwise
-    % Path 1: M1 -> M3 -> M5
-    % Path 2: M2 -> M4 -> M5
+    % Define the fitness function
+    fitnessFunction = @(x) calculate_combined_makespan(x, processing_times);
 
-    % Variables: x1, x2, ..., xn (for Path 1) and y1, y2, ..., yn (for Path 2)
-    % Total variables: 2 * num_jobs
-    f = zeros(2 * num_jobs, 1);
-    
-    % Constraints
+    % Define the number of variables (num_jobs * 2)
+    nvars = num_jobs * 2;
+
+    % Define the constraints
     Aeq = [eye(num_jobs), eye(num_jobs)];
     beq = ones(num_jobs, 1);
-    
-    A = [];
-    b = [];
-    
-    lb = zeros(2 * num_jobs, 1);
-    ub = ones(2 * num_jobs, 1);
-    
-    intcon = 1:(2 * num_jobs);
-    
-    % Optimize using intlinprog
-    options = optimoptions(@intlinprog, 'Display', 'off');
-    [x, ~] = intlinprog(f, intcon, A, b, Aeq, beq, lb, ub, options);
-    
+
+    % Define the bounds
+    lb = zeros(nvars, 1);
+    ub = ones(nvars, 1);
+
+    % Define the options for the genetic algorithm
+    ga_options = optimoptions('ga', ...
+        'Display', 'iter', ...
+        'PopulationSize', 200, ...          % Increased population size
+        'MaxGenerations', 200, ...          % Increased number of generations
+        'CrossoverFraction', 0.8, ...       % Crossover fraction
+        'EliteCount', 10, ...               % Number of elite individuals
+        'FunctionTolerance', 1e-6, ...      % Function tolerance
+        'UseParallel', false, ...           % Disable parallel computation
+        'HybridFcn', @patternsearch ...     % Use pattern search as hybrid function
+    );
+
+    % Run the genetic algorithm
+    [x, fval] = ga(fitnessFunction, nvars, [], [], Aeq, beq, lb, ub, [], ga_options);
+
     % Extract job assignments
-    jobs_path1 = find(x(1:num_jobs) == 1);
-    jobs_path2 = find(x((num_jobs+1):end) == 1);
-    
+    jobs_path1 = find(x(1:num_jobs) > 0.5);
+    jobs_path2 = find(x((num_jobs+1):end) > 0.5);
+
+    % Display results
+    disp(['Best sequence path 1: ', mat2str(jobs_path1)]);
+    disp(['Best sequence path 2: ', mat2str(jobs_path2)]);
+
     % Calculate makespans for the paths
     makespan1 = calculate_makespan(processing_times, jobs_path1, [1, 3, 5]);
     makespan2 = calculate_makespan(processing_times, jobs_path2, [2, 4, 5]);
-    
+
     % Combined makespan
     combined_makespan = max(makespan1, makespan2);
-    
-    % Convert job indices to 1-based
-    jobs_path1 = jobs_path1;
-    jobs_path2 = jobs_path2;
-    
-    disp(['Best sequence path 1: ', num2str(jobs_path1')]);
-    disp(['Best sequence path 2: ', num2str(jobs_path2')]);
+
     disp(['Best combined makespan: ', num2str(combined_makespan)]);
 end
 
-function makespan = calculate_makespan(processing_times, sequence, machines)
-    num_jobs = length(sequence);
-    num_machines = length(machines);
+function combined_makespan = calculate_combined_makespan(x, processing_times)
+    % Number of jobs
+    num_jobs = size(processing_times, 2);
 
-    if num_jobs == 0
+    % Extract job assignments
+    jobs_path1 = find(x(1:num_jobs) > 0.5);
+    jobs_path2 = find(x((num_jobs+1):end) > 0.5);
+
+    % Check if any jobs are not assigned
+    if isempty(jobs_path1) || isempty(jobs_path2)
+        combined_makespan = inf;
+        return;
+    end
+
+    % Calculate makespans for the paths
+    makespan1 = calculate_makespan(processing_times, jobs_path1, [1, 3, 5]);
+    makespan2 = calculate_makespan(processing_times, jobs_path2, [2, 4, 5]);
+
+    % Combined makespan
+    combined_makespan = max(makespan1, makespan2);
+end
+
+function makespan = calculate_makespan(processing_times, sequence, machines)
+    if isempty(sequence)
         makespan = 0;
         return;
     end
+
+    num_jobs = length(sequence);
+    num_machines = length(machines);
 
     completion_times = zeros(num_machines, num_jobs);
 
