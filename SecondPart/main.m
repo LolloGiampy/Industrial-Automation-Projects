@@ -21,26 +21,30 @@ else
     disp(conn.Message);
     return;
 end
+% Reset delle tabelle
+execute(conn, 'BEGIN TRANSACTION;');
+execute(conn, 'DELETE FROM job_assignments');
+execute(conn, 'COMMIT;');
 
 execute(conn, 'BEGIN TRANSACTION;');
 execute(conn, 'DELETE FROM cutted_tubes');
-execute(conn, 'DELETE FROM job_assignments');
 execute(conn, 'COMMIT;');
 
 % Genera istanze del problema
 num_instances = 3;
-num_tubes = 10;
+num_tubes = 2;
 max_batch_size = 5;
 instances = generate_instances(num_instances, num_tubes, max_batch_size);
 
 execute(conn, 'BEGIN TRANSACTION;');
 
-% Salva le istanze nel database
+% Salva le istanze nel database nella tabella "cutted_tubes"
 save_instances_to_db(conn, instances);
 
 % Applica il johnson algorithm e salva la schedule ottima nel database
+% nella tabella "job_assignments
 ordered_instances = johnson_algorithm(instances);
-store_result_in_db(conn, ordered_instances,  batch_id)
+save_job_assignments_to_db(conn, ordered_instances)
 
 execute(conn, 'COMMIT;');
 

@@ -1,3 +1,4 @@
+% Dichiarazione della funzione
 function ordered_instances = johnson_algorithm(instances)
     num_instances = length(instances);
     ordered_instances = cell(num_instances, 1);
