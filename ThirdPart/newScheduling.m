@@ -1,72 +1,73 @@
-% Number of jobs
-n = 10;
-
-% Processing times for each job on each machine
-processing_times = [
-    5, 3, 6, 8, 4, 12, 12, 5, 3, 2;    % M1
-    12, 6, 1, 5, 6, 15, 3, 2, 8, 8;    % M2
-    1, 20, 2, 5, 7, 11, 12, 2, 5, 4;   % M3
-    13, 10, 1, 15, 6, 12, 11, 4, 4, 13;% M4
-    2, 6, 2, 1, 5, 13, 2, 7, 18, 3     % M5
+% Definizione dei dati
+p = [
+    [5, 3, 6, 8, 4, 12, 12, 5, 3, 2],
+    [12, 6, 1, 5, 6, 15, 3, 2, 8, 8],
+    [1, 20, 2, 5, 7, 11, 12, 2, 5, 4],
+    [13, 10, 1, 15, 6, 12, 11, 4, 4, 13],
+    [2, 6, 2, 1, 5, 13, 2, 7, 18, 3]
 ];
+n = 10;  % Numero di job
+m = 5;  % Numero di macchine
 
-% Large constant for the constraints
-M = sum(processing_times, 'all');
+% Variabili decisionali
+x = zeros(m,n);  % Matrice di assegnazione (x_ij)
 
-% Objective function: minimize C_max
-f = [zeros(1, 2*n), 1]; % 2*n binary variables and 1 for C_max
+% Funzione obiettivo
+f = sum(max(p.*x));  % Minimizzare Cmax
 
-% Constraints
-A = [];
-b = [];
+% Vincoli
+A = zeros(3*n + 5*m, n*m);  % Matrice dei coefficienti dei vincoli
+b = zeros(3*n + 5*m, 1);    % Vettore dei termini noti dei vincoli
 
-% Job assignment constraints (each job must be assigned to exactly one path)
-Aeq = [eye(n), eye(n), zeros(n, 1)];
-beq = ones(n, 1);
+% Vincoli di assegnazione
+for j = 1:n
+    A(j,:) = ones(1,n*m);
+    b(j) = 1;
+end
 
-% Path constraints
-% Path 1: Machines 1, 3, 5
-path1_machines = [1, 3, 5];
-% Path 2: Machines 2, 4
-path2_machines = [2, 4, 5];
-
-for i = 1:n
-    % Path 1 constraints
-    for m = path1_machines
-        tempA = zeros(1, 2*n+1);
-        tempA(i) = processing_times(m, i); % Process time for job i on machine m
-        tempA(end) = -1; % C_max >= sum of process times
-        A = [A; tempA];
-        b = [b; 0];
-    end
-
-    % Path 2 constraints
-    for m = path2_machines
-        tempA = zeros(1, 2*n+1);
-        tempA(n+i) = processing_times(m, i); % Process time for job i on machine m
-        tempA(end) = -1; % C_max >= sum of process times
-        A = [A; tempA];
-        b = [b; 0];
+% Vincoli di sequenza
+for i = 2:m
+    for j = 1:n
+        % Job i può iniziare solo dopo il completamento del job i-1 sulla stessa macchina
+        A(n + (i-2)*n + j, m*(j-1) + i) = 1;
+        A(n + (i-2)*n + j, m*(j-1) + i-1) = -1;
     end
 end
 
-% Lower and upper bounds for decision variables
-lb = zeros(2*n+1, 1);
-ub = [ones(2*n, 1); Inf];
+% Vincoli di flusso
+for j = 1:n
+  
 
-% Binary variables for job assignment
-intcon = 1:2*n;
+    % Option 1 (Reshape x elements)
+A(2*n + j,:) = [x(1,j) x(3,j) x(5,j)];
 
-% Solve the MILP
-opts = optimoptions('intlinprog', 'Display', 'off');
-[x, fval] = intlinprog(f, intcon, A, b, Aeq, beq, lb, ub, opts);
+% Option 2 (Reshape A elements)
+A(2*n + j,:) = A(2*n + j, [1 3 5]);
 
-% Extract job assignments and makespan
-C_max = fval;
-assignments = x(1:2*n);
+end
 
-% Display results
-disp('Job Assignments:');
-disp(reshape(assignments, n, 2));
+% Vincoli di tempo
+for i = 1:m
+    for j = 1:n
+        A(end + j, m*(j-1) + i) = -p(i,j);
+        b(end + j) = 0;
+    end
+end
 
-disp(['Minimum Makespan: ', num2str(C_max)]);
+% Risoluzione del problema
+options = optimoptions('linprog');
+[xopt, fval, exitflag, info] = linprog(f, A, b, [], [], zeros(n*m,1), options);
+
+% Visualizzazione dei risultati
+Cmax = fval;
+x = reshape(xopt, [m, n]);
+
+fprintf('Tempo di completamento massimo (Cmax): %f\n', Cmax);
+fprintf('Assegnazione dei job alle macchine:\n');
+for i = 1:m
+    for j = 1:n
+        if x(i,j) > 0
+            fprintf('Job %d assegnato a macchina %d\n', j, i);
+        end
+    end
+end
