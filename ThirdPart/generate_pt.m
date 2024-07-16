@@ -1,10 +1,12 @@
 function pts = generate_pt(num_jobs)
-    pts = zeros(num_jobs, 5); % Columns: [id, machine_1, machine_2, machine_3, machine_4, machine_5]
-    pts(1) = [];
-    for i = 1:num_jobs
-        processing_time = randi([1, 20]);
-        for j = 1:5
-            machine_id = j;
-            pts(machine_id,i) = [i, machine_id, processing_time];
+    pts = zeros(6, num_jobs+1); 
+    pts(1,:) =0:num_jobs;
+    pts(:,1) =0:5;
+    for job = 2:(num_jobs+1)
+        for machine = 2:6
+            processing_time = randi([1, 20]);
+            pts(machine,job) = processing_time;
         end
     end
+    pts
+    pts_cutted=pts(2:end,2:end)
