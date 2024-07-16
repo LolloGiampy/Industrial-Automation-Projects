@@ -72,37 +72,40 @@ function combined_makespan = calculate_combined_makespan(x, processing_times)
         return;
     end
 
-    % Calculate makespans for the path calling calculate_makespan
+    % Calculate makespans for the path calling the function calculate_makespan
     makespan1 = calculate_makespan(processing_times, jobs_path1, [1, 3, 5]);
     makespan2 = calculate_makespan(processing_times, jobs_path2, [2, 4, 5]);
 
-    % calculate combined makespan, it is determined by the path which takes
-    % longer
+    % calculate combined makespan, it is determined by the path which takes longer
     combined_makespan = max(makespan1, makespan2);
 end
 
 function makespan = calculate_makespan(processing_times, sequence, machines)
+    % if the job sequence is empty, then the function immediately returns a makespan equal to zero
     if isempty(sequence)
         makespan = 0;
         return;
     end
 
+    % variable initialization
     num_jobs = length(sequence);
     num_machines = length(machines);
-
-    completion_times = zeros(num_machines, num_jobs);
+    completion_times = zeros(num_machines, num_jobs); % matrix which will be used to keep track of jobs' completion times 
 
     % Fill the completion times for the first job
-    completion_times(1, 1) = processing_times(machines(1), sequence(1));
+    completion_times(1, 1) = processing_times(machines(1), sequence(1)); % set completion time of the first job on the first machine
+    % for each subsequent machine sum processing times, accumulating completion times
     for m = 2:num_machines
         completion_times(m, 1) = completion_times(m-1, 1) + processing_times(machines(m), sequence(1));
     end
 
     % Fill the completion times for the rest of the jobs
     for j = 2:num_jobs
+        % compute completion time on the first machine as the sum of completion time of the previous job and the current processing time
         completion_times(1, j) = completion_times(1, j-1) + processing_times(machines(1), sequence(j));
+        % for each subsequent machine the completion time is the max between the completion time of the previous job on the same machine and the completion time of the current job on the previous machine
         for m = 2:num_machines
-            completion_times(m, j) = max(completion_times(m-1, j), completion_times(m, j-1)) + processing_times(machines(m), sequence(j));
+            completion_times(m, j) = max(completion_times(m-1, j), completion_times(m, j-1)) + processing_times(machines(m), sequence(j)); % then sum the current processing time with this max valuue
         end
     end
 
