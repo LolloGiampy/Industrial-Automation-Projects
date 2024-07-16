@@ -31,7 +31,7 @@ function [sequence, makespan] = solve_milp(tubes)
     % Precedence constraints for jobs on two machines
     M = 1000; % A large number
     % Count è così perchè ci sono già 2*n vincoli assegnati
-    count = 2 * n;
+    count = 2 * n + 1;
     % confronto del job corrente (i) con tutti gli altri job (j)
     for i = 1:n
         for j = 1:n
