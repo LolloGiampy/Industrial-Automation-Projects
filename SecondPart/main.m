@@ -31,7 +31,6 @@ execute(conn, 'DELETE FROM cutted_tubes');
 execute(conn, 'COMMIT;');
 
 % Genera istanze del problema
-% num_instances = 1;
 num_tubes = 6;
 batch_size = 3;
 tubes = generate_tubes(num_tubes, batch_size);
@@ -54,11 +53,19 @@ execute(conn, 'COMMIT;');
 
 % Verifica le prestazioni
 total_time = verify_performance(ordered_tubes);
-
-% Chiudi la connessione al database
-close(conn);
-
-% Mostra i risultati
+% Mostra i risultati del johnson algorithm
 fprintf('Ordered Tubes:\n');
 disp(ordered_tubes);
 fprintf('Total Time: %f\n', total_time);
+
+% Risolvi il problema MILP
+[sequence, milp_makespan] = solve_milp(tubes);
+% Mostra risultati del MILP
+disp('Optimal Job Sequence from MILP:');
+disp(sequence);
+
+disp('MILP Makespan:');
+disp(milp_makespan);
+
+% Chiudi la connessione al database
+close(conn);
