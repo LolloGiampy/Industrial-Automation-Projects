@@ -12,35 +12,35 @@ function new_scheduling()
     num_jobs = size(processing_times, 2);
 
     % Define the fitness function
-    fitnessFunction = @(x) calculate_combined_makespan(x, processing_times); % calculate_combined_makespan function is used as fitness function by the genetic algorithm
+    fitnessFunction = @(x) calculate_combined_makespan(x, processing_times, num_jobs);
 
     % Define the number of variables (num_jobs * 2)
     nvars = num_jobs * 2;
 
     % Define the constraints
-    Aeq = [eye(num_jobs), eye(num_jobs)]; % concatenate the two identity matrices with dimension num_jobs
-    beq = ones(num_jobs, 1); % right hand side of constraints equations
+    Aeq = [eye(num_jobs), eye(num_jobs)];
+    beq = ones(num_jobs, 1);
 
     % Define the bounds
-    lb = zeros(nvars, 1); % lower bound for decision variables
-    ub = ones(nvars, 1); % upper bound for decision variables
+    lb = zeros(nvars, 1);
+    ub = ones(nvars, 1);
 
     % Define the options for the genetic algorithm
     ga_options = optimoptions('ga', ...
         'Display', 'iter', ...
-        'PopulationSize', 200, ...          % population size
-        'MaxGenerations', 200, ...          % number of generations
-        'CrossoverFraction', 0.8, ...       % crossover fraction
-        'EliteCount', 10, ...               % number of elite individuals
-        'FunctionTolerance', 1e-6, ...      % function tolerance
-        'UseParallel', false, ...           % disable parallel computation
-        'HybridFcn', @patternsearch ...     % use pattern search as hybrid function
+        'PopulationSize', 200, ...
+        'MaxGenerations', 200, ...
+        'CrossoverFraction', 0.8, ...
+        'EliteCount', 10, ...
+        'FunctionTolerance', 1e-6, ...
+        'UseParallel', false, ...
+        'HybridFcn', @patternsearch ...
     );
 
     % Run the genetic algorithm
     [x, fval] = ga(fitnessFunction, nvars, [], [], Aeq, beq, lb, ub, [], ga_options);
 
-    % Extract job assignments, these variables contain the optimal sequences of jobs found by the genetic algorithm 
+    % Extract job assignments
     jobs_path1 = find(x(1:num_jobs) > 0.5);
     jobs_path2 = find(x((num_jobs+1):end) > 0.5);
 
@@ -48,85 +48,77 @@ function new_scheduling()
     disp(['Best sequence path 1: ', mat2str(jobs_path1)]);
     disp(['Best sequence path 2: ', mat2str(jobs_path2)]);
 
-    % Calculate makespans for the paths
-    makespan1 = calculate_minimum_makespan(processing_times, jobs_path1, [1, 3, 5]);
-    makespan2 = calculate_minimum_makespan(processing_times, jobs_path2, [2, 4, 5]);
-
     % Combined makespan
-    combined_makespan = max(makespan1, makespan2);
+    combined_makespan = calculate_combined_makespan_on_M5(processing_times, jobs_path1, jobs_path2);
 
     disp(['Best combined makespan: ', num2str(combined_makespan)]);
 end
 
-function combined_makespan = calculate_combined_makespan(x, processing_times)
-    % Number of jobs
-    num_jobs = size(processing_times, 2);
-
+function combined_makespan = calculate_combined_makespan(x, processing_times, num_jobs)
     % Extract job assignments
-    jobs_path1 = find(x(1:num_jobs) > 0.5); % extract jobs assigned to the first path
-    jobs_path2 = find(x((num_jobs+1):end) > 0.5); % extract jobs assigned to the second path
+    jobs_path1 = find(x(1:num_jobs) > 0.5);
+    jobs_path2 = find(x((num_jobs+1):end) > 0.5);
 
-    % Check if any jobs are not assigned
     if isempty(jobs_path1) || isempty(jobs_path2)
-        combined_makespan = inf; % if one of the two paths does not have any assigned jobs, the function returns an infinite makespan, reporting an invalid solution 
+        combined_makespan = inf;
         return;
     end
 
-    % Calculate makespans for the path calling the function calculate_minimum_makespan
-    makespan1 = calculate_minimum_makespan(processing_times, jobs_path1, [1, 3, 5]);
-    makespan2 = calculate_minimum_makespan(processing_times, jobs_path2, [2, 4, 5]);
-
-    % calculate combined makespan, it is determined by the path which takes longer
-    combined_makespan = max(makespan1, makespan2);
+    % Combined makespan considering the order on M5
+    combined_makespan = calculate_combined_makespan_on_M5(processing_times, jobs_path1, jobs_path2);
 end
 
-function min_makespan = calculate_minimum_makespan(processing_times, sequence, machines)
-    % Calculate all permutations of the job sequence
-    permutations = perms(sequence);
-    num_permutations = size(permutations, 1);
+function combined_makespan = calculate_combined_makespan_on_M5(processing_times, jobs_path1, jobs_path2)
+    % Calculate completion times up to M4 for both paths
+    completion_times1 = calculate_completion_times(processing_times, jobs_path1, [1, 3, 4]);
+    completion_times2 = calculate_completion_times(processing_times, jobs_path2, [2, 4]);
 
-    % Initialize minimum makespan to a large value
-    min_makespan = inf;
+    % Initialize variables
+    time_on_m5 = 0;
+    job_sequence_on_m5 = [];
 
-    % Evaluate makespan for each permutation
-    for i = 1:num_permutations
-        current_sequence = permutations(i, :);
-        makespan = calculate_makespan(processing_times, current_sequence, machines);
-        if makespan < min_makespan
-            min_makespan = makespan;
-        end
+    % Combine jobs from both paths to be processed on M5
+    jobs_on_m5 = [jobs_path1, jobs_path2];
+    completion_times_on_m5 = [completion_times1(end, :), completion_times2(end, :)];
+    [sorted_completion_times, sort_idx] = sort(completion_times_on_m5);
+
+    % Process jobs on M5 in order of completion times
+    for i = sort_idx
+        job = jobs_on_m5(i);
+        job_time_on_m5 = processing_times(5, job);
+        time_on_m5 = max(time_on_m5, sorted_completion_times(i)) + job_time_on_m5;
+        job_sequence_on_m5 = [job_sequence_on_m5, job];
     end
+
+    combined_makespan = time_on_m5;
 end
 
-function makespan = calculate_makespan(processing_times, sequence, machines)
-    % if the job sequence is empty, then the function immediately returns a makespan equal to zero
+function completion_times = calculate_completion_times(processing_times, sequence, machines)
     if isempty(sequence)
-        makespan = 0;
+        completion_times = [];
         return;
     end
 
-    % variable initialization
     num_jobs = length(sequence);
     num_machines = length(machines);
-    completion_times = zeros(num_machines, num_jobs); % matrix which will be used to keep track of jobs' completion times 
+    completion_times = zeros(num_machines, num_jobs);
 
-    % Fill the completion times for the first job
-    completion_times(1, 1) = processing_times(machines(1), sequence(1)); % set completion time of the first job on the first machine
-    % for each subsequent machine sum processing times, accumulating completion times
+    completion_times(1, 1) = processing_times(machines(1), sequence(1));
     for m = 2:num_machines
         completion_times(m, 1) = completion_times(m-1, 1) + processing_times(machines(m), sequence(1));
     end
 
-    % Fill the completion times for the rest of the jobs
     for j = 2:num_jobs
-        % compute completion time on the first machine as the sum of completion time of the previous job and the current processing time
         completion_times(1, j) = completion_times(1, j-1) + processing_times(machines(1), sequence(j));
-        % for each subsequent machine the completion time is the max between the completion time of the previous job on the same machine and the completion time of the current job on the previous machine
         for m = 2:num_machines
-            completion_times(m, j) = max(completion_times(m-1, j), completion_times(m, j-1)) + processing_times(machines(m), sequence(j)); % then sum the current processing time with this max valuue
+            % Ensure indices are within bounds
+            if m > 1 && j > 1
+                completion_times(m, j) = max(completion_times(m-1, j), completion_times(m, j-1)) + processing_times(machines(m), sequence(j));
+            elseif m > 1
+                completion_times(m, j) = completion_times(m-1, j) + processing_times(machines(m), sequence(j));
+            elseif j > 1
+                completion_times(m, j) = completion_times(m, j-1) + processing_times(machines(m), sequence(j));
+            end
         end
     end
-
-    % Makespan is the last element in the completion times matrix
-    makespan = completion_times(end, end);
 end
