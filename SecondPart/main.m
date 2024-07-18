@@ -31,7 +31,7 @@ execute(conn, 'DELETE FROM cutted_tubes');
 execute(conn, 'COMMIT;');
 
 % Genera istanze del problema
-num_tubes = 6;
+num_tubes = 100;
 batch_size = 3;
 tubes = generate_tubes(num_tubes, batch_size);
 

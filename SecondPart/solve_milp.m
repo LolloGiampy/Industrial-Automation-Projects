@@ -1,60 +1,118 @@
-function [sequence, makespan] = solve_milp(tubes)
-    % Define the number of jobs
+function [sequence, total_time] = solve_milp(tubes)
+    % Definisci il numero di job (tubi)
     n = size(tubes, 1);
 
-    % Processing times for the jobs
-    a = tubes(:, 2); % Welding times
-    b = tubes(:, 3); % Oven times
+    % Tempi di elaborazione per i job
+    a = tubes(:, 2); % Tempi di saldatura
+    b = tubes(:, 3); % Tempi di cottura
 
-    % Define MILP variables
-    x = optimvar('x', n, n, 'Type', 'integer', 'LowerBound', 0, 'UpperBound', 1);
-    s = optimvar('s', n, 'Type', 'continuous', 'LowerBound', 0);
-    Cmax = optimvar('Cmax', 'Type', 'continuous', 'LowerBound', 0);
+    % Variabili MILP
+    x = optimvar('x', n, n, 'Type', 'integer', 'LowerBound', 0, 'UpperBound', 1); % Job sequence positions
+    s_w = optimvar('s_w', n, 'Type', 'continuous', 'LowerBound', 0); % Welding start times
+    e_w = optimvar('e_w', n, 'Type', 'continuous', 'LowerBound', 0); % Welding end times
+    s_o = optimvar('s_o', n, 'Type', 'continuous', 'LowerBound', 0); % Oven start times
+    e_o = optimvar('e_o', n, 'Type', 'continuous', 'LowerBound', 0); % Oven end times
+    total_time_var = optimvar('total_time', 'Type', 'continuous', 'LowerBound', 0); % Total time
 
-    % Objective: Minimize makespan
-    obj = Cmax;
+    % Variabili per simulare max(e_o) e min(s_w)
+    max_e_o = optimvar('max_e_o', 'Type', 'continuous', 'LowerBound', 0);
+    min_s_w = optimvar('min_s_w', 'Type', 'continuous', 'LowerBound', 0);
 
-    % Empty constraints
-    constraints = optimconstr(n^2 + 2*n, 1);
+    % Obiettivo: Minimizzare il tempo totale
+    obj = total_time_var;
 
-    % Each job is assigned to exactly one position
-    % Somma di tutte le variabili decisionali per un tale lavoro, assegna quella che è uguale a 1 in quella posizione
-    for i = 1:n
-        constraints(i) = sum(x(i, :)) == 1;
-    end
+    % Vincoli
+    eq_constraints = optimconstr; % Job assegnati alle posizioni + posizioni assegnate ai job
+    prec_constraints = optimconstr; % Vincoli di precedenza
+    after_constraints = optimconstr; % Vincoli di sequenza
 
-    % Each position is occupied by exactly one job
-    for j = 1:n
-        constraints(n + j) = sum(x(:, j)) == 1;
-    end
-
-    % Precedence constraints for jobs on two machines
-    M = 1000; % A large number
-    % Count è così perchè ci sono già 2*n vincoli assegnati
-    count = 2 * n + 1;
-    % confronto del job corrente (i) con tutti gli altri job (j)
+    % Vincoli di non sovrapposizione per la macchina di welding
+    M = 1000; % Un numero grande
     for i = 1:n
         for j = 1:n
             if i ~= j
-                count = count + 1;
-                constraints(count) = s(i) + a(i) <= s(j) + M * (1 - x(i, j));
+                prec_constraints = [prec_constraints;
+                    s_w(i) + a(i) <= s_w(j) + M * (1 - x(i,j))];
             end
         end
     end
-    
-    % Makespan constraints
+
+    % Vincoli di non sovrapposizione per la macchina di oven
     for i = 1:n
-        constraints(count + i) = Cmax >= s(i) + a(i) + b(i);
+        for j = 1:n
+            if i ~= j
+                prec_constraints = [prec_constraints;
+                    s_o(i) + b(i) <= s_o(j) + M * (1 - x(i,j))];
+            end
+        end
     end
 
-    % Create the optimization problem
-    prob = optimproblem('Objective', obj, 'Constraints', constraints);
+    % Vincoli di sequenza tra macchine
+    % l'end time welding dev'essere uguale a start time welding + welding time
+    for i = 1:n
+        eq_constraints = [eq_constraints;
+            e_w(i) == s_w(i) + a(i)];
+        after_constraints = [after_constraints;
+            s_o(i) >= e_w(i)];
+    end
 
-    % Solve the MILP problem
+    % Vincoli sul tempo totale
+    for i = 1:n
+        after_constraints = [after_constraints;
+            total_time_var >= e_o(i)];
+    end
+
+    % Vincoli di fine per le macchine
+    for i = 1:n
+        eq_constraints = [eq_constraints;
+            e_o(i) == s_o(i) + b(i)];
+    end
+
+    % Vincoli di unicità delle posizioni nella sequenza
+    for i = 1:n
+        eq_constraints = [eq_constraints;
+            sum(x(i,:)) == 1;
+            sum(x(:,i)) == 1];
+    end
+
+    % Vincoli per simulare max(e_o)
+    for i = 1:n
+        after_constraints = [after_constraints;
+            max_e_o >= e_o(i)];
+    end
+
+    % Vincoli per simulare min(s_w)
+    for i = 1:n
+        prec_constraints = [prec_constraints;
+            min_s_w <= s_w(i)];
+    end
+
+    % Vincolo per calcolare il total time come differenza tra il primo welding start e l'ultimo oven end
+    eq_constraints = [eq_constraints;
+        total_time_var == e_o];
+
+    % Welding constraints: Ensure only one welding job at a time
+    for i = 1:(n - 1)
+        prec_constraints = [prec_constraints; s_w(i) + a(i) <= s_w(i + 1)];
+    end
+
+    for i = 1:(n - 1)
+        prec_constraints = [prec_constraints; s_o(i) + b(i) <= s_o(i + 1)];
+    end
+
+    % Crea il problema di ottimizzazione
+    prob = optimproblem('Objective', obj, 'Constraints', struct('eq', eq_constraints, 'prec', prec_constraints, 'after', after_constraints));
+
+    % Risolvi il problema MILP
     options = optimoptions('intlinprog', 'Display', 'off');
     [sol, fval, exitflag, output] = solve(prob, 'Options', options);
 
-    % Extract sequence and makespan
+    % Verifica se la soluzione è stata trovata
+    if exitflag <= 0
+        error('La soluzione del problema MILP non è stata trovata.');
+    end
+
+    % Estrai la sequenza dei job dalla soluzione
     sequence = zeros(n, 1);
     for j = 1:n
         for i = 1:n
@@ -63,5 +121,21 @@ function [sequence, makespan] = solve_milp(tubes)
             end
         end
     end
-    makespan = fval;
+
+    % Calcola il tempo totale come la differenza tra il tempo di inizio del primo job
+    % sulla macchina di saldatura e il tempo di fine dell'ultimo job sulla macchina di cottura
+    total_time = fval;
+
+    % Stampa i valori delle variabili di ottimizzazione per il debug
+    disp('Valori delle variabili di ottimizzazione risolte:');
+    disp('Welding start times (s_w):');
+    disp(sol.s_w);
+    disp('Welding end times (e_w):');
+    disp(sol.e_w);
+    disp('Oven start times (s_o):');
+    disp(sol.s_o);
+    disp('Oven end times (e_o):');
+    disp(sol.e_o);
+    disp('Total time:');
+    disp(total_time);
 end

@@ -25,22 +25,21 @@ function schedulingDB()
     % Reset delle tabelle
     execute(conn, 'BEGIN TRANSACTION;');
     execute(conn, 'DELETE FROM processing_times');
+    execute(conn, 'DELETE FROM best_schedule');
     execute(conn, 'COMMIT;');
 
     execute(conn, 'BEGIN TRANSACTION;');
     generate_pt(conn, 10);
     execute(conn, 'COMMIT;');
     data = sqlread(conn, "processing_times");
-    table2array(data)
+    data = table2array(data);
+    data = data.';
+    data = data(2:end, 1:end);
+    disp("Dati: ");
+    disp(data);
 
-    % Job processing times for each machine (10 jobs, 5 machines)
-    processing_times = [
-        5, 3, 6, 8, 4, 12, 12, 5, 3, 2;    % M1
-        12, 6, 1, 5, 6, 15, 3, 2, 8, 8;    % M2
-        1, 20, 2, 5, 7, 11, 12, 2, 5, 4;   % M3
-        13, 10, 1, 15, 6, 12, 11, 4, 4, 13;% M4
-        2, 6, 2, 1, 5, 13, 2, 7, 18, 3     % M5
-    ];
+    processing_times = data;
+
 
     % Get number of jobs
     num_jobs = size(processing_times, 2);
@@ -91,12 +90,12 @@ function schedulingDB()
 
     disp(['Best combined makespan: ', num2str(combined_makespan)]);
     for job = jobs_path1
-        sqlquery = sprintf("INSERT INTO processing_times (id, path) VALUES (%d, %d)", ...
+        sqlquery = sprintf("INSERT INTO best_schedule (id, path_id) VALUES (%d, %d)", ...
         job,1 );
         execute(conn, sqlquery);
     end
     for job = jobs_path2
-        sqlquery = sprintf("INSERT INTO processing_times (id, path) VALUES (%d, %d)", ...
+        sqlquery = sprintf("INSERT INTO best_schedule (id, path_id) VALUES (%d, %d)", ...
         job,2 );
         execute(conn, sqlquery);
     end
