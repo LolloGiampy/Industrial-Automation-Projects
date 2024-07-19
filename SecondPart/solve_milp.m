@@ -47,6 +47,16 @@ function [sequence, total_time] = solve_milp(tubes)
         end
     end
 
+
+
+
+    for i = 1:n
+        
+            if sum(x(i,:))==0
+               s_w(i)=0   
+            end
+        
+    end
     % Vincoli di sequenza tra macchine
     % l'end time welding dev'essere uguale a start time welding + welding time
     for i = 1:n
@@ -119,13 +129,19 @@ function [sequence, total_time] = solve_milp(tubes)
 
     % Estrai la sequenza dei job dalla soluzione
     sequence = zeros(n, 1);
-    for j = 1:n
+    for i = 1:n
+        if sum(x(i,:)) ==0
+            sequence(1)=i;
+        end
+    end
+    for place = 2:n
         for i = 1:n
-            if round(sol.x(i, j)) == 1
-                sequence(j) = i;
+            if x(i,sequence(place-1))==1
+                sequence(place)=i;
             end
         end
     end
+
 
     % Calcola il tempo totale come la differenza tra il tempo di inizio del primo job
     % sulla macchina di saldatura e il tempo di fine dell'ultimo job sulla macchina di cottura
