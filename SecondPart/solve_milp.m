@@ -69,11 +69,14 @@ function [sequence, total_time] = solve_milp(tubes)
     end
 
     % Vincoli di unicità delle posizioni nella sequenza
-    for i = 1:n
-        eq_constraints = [eq_constraints;
-            sum(x(i,:)) == 1;
-            sum(x(:,i)) == 1];
-    end
+     for i = 1:n
+       prec_constraints = [prec_constraints;
+            sum(x(i,:)) <= 1;
+            sum(x(:,i)) <= 1];
+     end
+    
+     eq_constraints = [eq_constraints;
+              sum(x(:)) == n-1]; 
 
     % Vincoli per simulare max(e_o)
     for i = 1:n
@@ -89,7 +92,7 @@ function [sequence, total_time] = solve_milp(tubes)
 
     % Vincolo per calcolare il total time come differenza tra il primo welding start e l'ultimo oven end
     eq_constraints = [eq_constraints;
-        total_time_var == e_o];
+        total_time_var == max_e_o];
 
     % Welding constraints: Ensure only one welding job at a time
     for i = 1:(n - 1)
@@ -103,14 +106,16 @@ function [sequence, total_time] = solve_milp(tubes)
     % Crea il problema di ottimizzazione
     prob = optimproblem('Objective', obj, 'Constraints', struct('eq', eq_constraints, 'prec', prec_constraints, 'after', after_constraints));
 
+    show(prob)
+
     % Risolvi il problema MILP
     options = optimoptions('intlinprog', 'Display', 'off');
     [sol, fval, exitflag, output] = solve(prob, 'Options', options);
 
     % Verifica se la soluzione è stata trovata
-    if exitflag <= 0
-        error('La soluzione del problema MILP non è stata trovata.');
-    end
+    % if exitflag <= 0
+    %    error('La soluzione del problema MILP non è stata trovata.');
+    % end
 
     % Estrai la sequenza dei job dalla soluzione
     sequence = zeros(n, 1);
@@ -138,4 +143,6 @@ function [sequence, total_time] = solve_milp(tubes)
     disp(sol.e_o);
     disp('Total time:');
     disp(total_time);
+    disp('x: ');
+    disp(sol.x);
 end

@@ -1,73 +1,89 @@
-% Definizione dei dati
-p = [
-    [5, 3, 6, 8, 4, 12, 12, 5, 3, 2],
-    [12, 6, 1, 5, 6, 15, 3, 2, 8, 8],
-    [1, 20, 2, 5, 7, 11, 12, 2, 5, 4],
-    [13, 10, 1, 15, 6, 12, 11, 4, 4, 13],
-    [2, 6, 2, 1, 5, 13, 2, 7, 18, 3]
-];
-n = 10;  % Numero di job
-m = 5;  % Numero di macchine
+clc 
+clear
 
-% Variabili decisionali
-x = zeros(m,n);  % Matrice di assegnazione (x_ij)
+%% Definizione delle Matrici di Input
+% Esempio con 4 tubi (job)
+P = [3, 5, 2, 7;  % Tempi di saldatura
+     4, 6, 3, 8]; % Tempi di forno
 
-% Funzione obiettivo
-f = sum(max(p.*x));  % Minimizzare Cmax
+GM = {[1,1], [2,1];  % Tubi devono passare prima per saldatura, poi per forno
+      [1,2], [2,2];
+      [1,3], [2,3];
+      [1,4], [2,4]};
 
-% Vincoli
-A = zeros(3*n + 5*m, n*m);  % Matrice dei coefficienti dei vincoli
-b = zeros(3*n + 5*m, 1);    % Vettore dei termini noti dei vincoli
+%% Chiamata alla Funzione di Makespan
+fig = uifigure;
+dep = uiprogressdlg(fig,'Title','Computing JSSP Makespan...','Indeterminate','on');
+drawnow
+MakespanFcn(P,GM)
+close(dep)
+delete(fig)
 
-% Vincoli di assegnazione
-for j = 1:n
-    A(j,:) = ones(1,n*m);
-    b(j) = 1;
-end
+function MakespanFcn(P,GM)
+    [MC, NJ] = size(P); % Dimensione della matrice P
+    t = optimvar('t', MC, NJ, 'Type', 'integer', 'LowerBound', 0); 
+    Cmax = optimvar('Cmax', NJ, 1, 'Type', 'integer', 'LowerBound', 0);
 
-% Vincoli di sequenza
-for i = 2:m
-    for j = 1:n
-        % Job i può iniziare solo dopo il completamento del job i-1 sulla stessa macchina
-        A(n + (i-2)*n + j, m*(j-1) + i) = 1;
-        A(n + (i-2)*n + j, m*(j-1) + i-1) = -1;
+    C = optimconstr(2*NJ);
+    for ii = 1:NJ
+        X = cell2mat(GM(ii, 1:end));
+        C(ii) = Cmax(ii) >= t(X(end-1), X(end)) + P(X(end-1), X(end)); % Ultima operazione dei job
     end
-end
 
-% Vincoli di flusso
-for j = 1:n
-  
+    JSP = optimproblem;
+    obj = sum(Cmax);
+    JSP.Objective = obj;
 
-    % Option 1 (Reshape x elements)
-A(2*n + j,:) = [x(1,j) x(3,j) x(5,j)];
-
-% Option 2 (Reshape A elements)
-A(2*n + j,:) = A(2*n + j, [1 3 5]);
-
-end
-
-% Vincoli di tempo
-for i = 1:m
-    for j = 1:n
-        A(end + j, m*(j-1) + i) = -p(i,j);
-        b(end + j) = 0;
-    end
-end
-
-% Risoluzione del problema
-options = optimoptions('linprog');
-[xopt, fval, exitflag, info] = linprog(f, A, b, [], [], zeros(n*m,1), options);
-
-% Visualizzazione dei risultati
-Cmax = fval;
-x = reshape(xopt, [m, n]);
-
-fprintf('Tempo di completamento massimo (Cmax): %f\n', Cmax);
-fprintf('Assegnazione dei job alle macchine:\n');
-for i = 1:m
-    for j = 1:n
-        if x(i,j) > 0
-            fprintf('Job %d assegnato a macchina %d\n', j, i);
+    count1 = NJ + 1;
+    for j = 1:NJ
+        X = cell2mat(GM(j, 1:end));
+        for k = 2:2:length(X)-2
+            C(count1) = t(X(k+1), X(k+2)) >= t(X(k-1), X(k)) + P(X(k-1), X(k));
+            count1 = count1 + 1;
         end
     end
+
+    x = optimvar('x', MC, NJ-1, NJ, 'Type', 'integer', 'LowerBound', 0, 'UpperBound', 1);
+
+    M = 1;
+    T = t;
+    while t ~= 0 
+        k = 0;
+        count = 0;
+        for j = 1:NJ 
+            s = 1;
+            while s < NJ 
+                for m = 1:MC 
+                    count = count + 1;
+                    k = j + s;
+                    D(count) = t(m,j) + P(m,j) <= t(m,k) + M*(1-x(m,j,k));
+                    count = count + 1;
+                    D(count) = t(m,k) + P(m,k) <= t(m,j) + M*x(m,j,k);
+                end
+                s = s + 1;
+                if (k == NJ)
+                    break
+                end
+            end
+            if ([m, j, k] == [m, NJ-1, NJ])
+                break
+            end
+        end
+        JSP.Constraints.C = C;
+        JSP.Constraints.D = D;
+        [Jobs, fval] = solve(JSP, 'solver', 'intlinprog');
+        t = (Jobs.t);
+        Cmax = max(Jobs.Cmax);
+        if isempty(t)
+            M = M + 1;
+            t = T;
+        end
+    end
+
+    % Stampa della sequenza dei job e del makespan
+    disp('Sequenza dei Job (Tubi):');
+    for n = 1:NJ
+        fprintf('Job %d (Saldatura: %d, Forno: %d)\n', n, t(1,n), t(2,n));
+    end
+    fprintf('Makespan: %d\n', Cmax);
 end
