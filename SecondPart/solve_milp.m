@@ -47,16 +47,6 @@ function [sequence, total_time] = solve_milp(tubes)
         end
     end
 
-
-
-
-    for i = 1:n
-        
-            if sum(x(i,:))==0
-               s_w(i)=0   
-            end
-        
-    end
     % Vincoli di sequenza tra macchine
     % l'end time welding dev'essere uguale a start time welding + welding time
     for i = 1:n
@@ -84,7 +74,16 @@ function [sequence, total_time] = solve_milp(tubes)
             sum(x(i,:)) <= 1;
             sum(x(:,i)) <= 1];
      end
-    
+
+     for i = 1:n
+         for j = 1:n
+             if i == j
+                 eq_constraints = [eq_constraints;
+                     x(i,j) == 0];
+             end
+         end
+     end
+        
      eq_constraints = [eq_constraints;
               sum(x(:)) == n-1]; 
 
@@ -105,18 +104,18 @@ function [sequence, total_time] = solve_milp(tubes)
         total_time_var == max_e_o];
 
     % Welding constraints: Ensure only one welding job at a time
-    for i = 1:(n - 1)
-        prec_constraints = [prec_constraints; s_w(i) + a(i) <= s_w(i + 1)];
-    end
+    % for i = 1:(n - 1)
+    %    prec_constraints = [prec_constraints; s_w(i) + a(i) <= s_w(i + 1)];
+    % end
 
-    for i = 1:(n - 1)
-        prec_constraints = [prec_constraints; s_o(i) + b(i) <= s_o(i + 1)];
-    end
+    % for i = 1:(n - 1)
+    %    prec_constraints = [prec_constraints; s_o(i) + b(i) <= s_o(i + 1)];
+    % end
 
     % Crea il problema di ottimizzazione
     prob = optimproblem('Objective', obj, 'Constraints', struct('eq', eq_constraints, 'prec', prec_constraints, 'after', after_constraints));
 
-    show(prob)
+    % show(prob)
 
     % Risolvi il problema MILP
     options = optimoptions('intlinprog', 'Display', 'off');
@@ -127,20 +126,29 @@ function [sequence, total_time] = solve_milp(tubes)
     %    error('La soluzione del problema MILP non è stata trovata.');
     % end
 
+    disp(sol.x);
+
     % Estrai la sequenza dei job dalla soluzione
-    sequence = zeros(n, 1);
-    for i = 1:n
-        if sum(x(i,:)) ==0
-            sequence(1)=i;
-        end
-    end
-    for place = 2:n
-        for i = 1:n
-            if x(i,sequence(place-1))==1
-                sequence(place)=i;
-            end
-        end
-    end
+    % sequence = zeros(n, 1);
+    %for j = 1:n
+     %   if sum(sol.x(:,j)) ==0
+      %      sequence(1)=j;
+       %     break;
+        %end
+    % end
+    %for place = 2:n
+    %    for i = 1:n
+     %       c = sequence(place - 1);
+     %       if int32(sol.x(c,i))==1
+      %          sequence(place)=int32(i);
+       %         break;
+        %    end
+       % end
+   % end
+
+   [sorted_end_times, original_indices] = sort(sol.e_o);
+
+   sequence = original_indices;
 
 
     % Calcola il tempo totale come la differenza tra il tempo di inizio del primo job
