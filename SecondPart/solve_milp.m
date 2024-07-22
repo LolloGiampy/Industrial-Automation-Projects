@@ -115,7 +115,7 @@ function [sequence, total_time] = solve_milp(tubes)
     % Crea il problema di ottimizzazione
     prob = optimproblem('Objective', obj, 'Constraints', struct('eq', eq_constraints, 'prec', prec_constraints, 'after', after_constraints));
 
-    % show(prob)
+    show(prob)
 
     % Risolvi il problema MILP
     options = optimoptions('intlinprog', 'Display', 'off');
@@ -130,21 +130,21 @@ function [sequence, total_time] = solve_milp(tubes)
 
     % Estrai la sequenza dei job dalla soluzione
     % sequence = zeros(n, 1);
-    %for j = 1:n
-     %   if sum(sol.x(:,j)) ==0
-      %      sequence(1)=j;
-       %     break;
-        %end
-    % end
-    %for place = 2:n
-    %    for i = 1:n
-     %       c = sequence(place - 1);
-     %       if int32(sol.x(c,i))==1
-      %          sequence(place)=int32(i);
-       %         break;
-        %    end
-       % end
-   % end
+   % %  %for j = 1:n
+   % %   %   if sum(sol.x(:,j)) ==0
+   % %    %      sequence(1)=j;
+   % %     %     break;
+   % %      %end
+   % %  % end
+   % %  %for place = 2:n
+   % %  %    for i = 1:n
+   % %   %       c = sequence(place - 1);
+   % %   %       if int32(sol.x(c,i))==1
+   % %    %          sequence(place)=int32(i);
+   % %     %         break;
+   % %      %    end
+   % %     % end
+   % % % end
 
    [sorted_end_times, original_indices] = sort(sol.e_o);
 
@@ -156,17 +156,17 @@ function [sequence, total_time] = solve_milp(tubes)
     total_time = fval;
 
     % Stampa i valori delle variabili di ottimizzazione per il debug
-    disp('Valori delle variabili di ottimizzazione risolte:');
-    disp('Welding start times (s_w):');
-    disp(sol.s_w);
-    disp('Welding end times (e_w):');
-    disp(sol.e_w);
-    disp('Oven start times (s_o):');
-    disp(sol.s_o);
-    disp('Oven end times (e_o):');
-    disp(sol.e_o);
-    disp('Total time:');
-    disp(total_time);
-    disp('x: ');
-    disp(sol.x);
+    % disp('Valori delle variabili di ottimizzazione risolte:');
+    % disp('Welding start times (s_w):');
+    % disp(sol.s_w);
+    % disp('Welding end times (e_w):');
+    % disp(sol.e_w);
+    % disp('Oven start times (s_o):');
+    % disp(sol.s_o);
+    % disp('Oven end times (e_o):');
+    % disp(sol.e_o);
+    % disp('Total time:');
+    % disp(total_time);
+    % disp('x: ');
+    % disp(sol.x);
 end
