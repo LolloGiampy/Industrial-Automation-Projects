@@ -115,8 +115,8 @@ function makespan = calculate_makespan(processing_times, sequence_path1,sequence
 
     % Fill the completion times for the first job
     completion_times_path1(1, 1) = processing_times(machines_path1(1), sequence_path1(1)); % set completion time of the first job on the first machine
-    
     % for each subsequent machine sum processing times, accumulating completion times
+    
     completion_times_path1(2, 1) = completion_times_path1(1, 1) + processing_times(machines_path1(2), sequence_path1(1));
     
     queque_machine5=[zeros(num_jobs_path1+num_jobs_path2,2)];
@@ -141,8 +141,8 @@ function makespan = calculate_makespan(processing_times, sequence_path1,sequence
 
     % Fill the completion times for the first job
     completion_times_path2(1, 1) = processing_times(machines_path2(1), sequence_path2(1)); % set completion time of the first job on the first machine
+    % for each subsequent machine sum processing times, accumulating completion times
     
-    % for each subsequent machine sum processing times, accumulating completion times    
     completion_times_path2(2, 1) = completion_times_path2(1, 1) + processing_times(machines_path2(2), sequence_path2(1));
     
     queque_machine5(num_jobs_path1+1,1)=completion_times_path2(2, 1);
