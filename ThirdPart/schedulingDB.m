@@ -74,8 +74,20 @@ function schedulingDB()
     [x, fval] = ga(fitnessFunction, nvars, [], [], Aeq, beq, lb, ub, [], ga_options);
 
     % Extract job assignments, these variables contain the optimal sequences of jobs found by the genetic algorithm 
-    jobs_path1 = find(x(1:num_jobs) > 0.5);
-    jobs_path2 = find(x((num_jobs+1):end) > 0.5);
+ indices_path1 = find(x(1:num_jobs) > 0.5);
+    indices_path2 = find(x((num_jobs+1):end) > 0.5);
+    
+    % Estrai i valori corrispondenti a questi indici
+    values_path1 = x(indices_path1);
+    values_path2 = x(indices_path2);
+    
+    % Ordina i valori in ordine decrescente e mantieni gli indici
+    [~, sorted_indices1] = sort(values_path1, 'descend');
+    [~, sorted_indices2] = sort(values_path2, 'descend');
+    
+    % Ottieni gli indici originali ordinati
+    jobs_path1 = indices_path1(sorted_indices1);
+    jobs_path2 = indices_path2(sorted_indices2);
 
     % Display results
     disp(['Best sequence path 1: ', mat2str(jobs_path1)]);
@@ -96,6 +108,37 @@ function schedulingDB()
         job,2 );
         execute(conn, sqlquery);
     end
+end
+
+function combined_makespan = calculate_combined_makespan(x, processing_times)
+    % Number of jobs
+    num_jobs = size(processing_times, 2);
+
+    indices_path1 = find(x(1:num_jobs) > 0.5);
+    indices_path2 = find(x((num_jobs+1):end) > 0.5);
+    
+    % Estrai i valori corrispondenti a questi indici
+    values_path1 = x(indices_path1);
+    values_path2 = x(indices_path2);
+    
+    % Ordina i valori in ordine decrescente e mantieni gli indici
+    [~, sorted_indices1] = sort(values_path1, 'descend');
+    [~, sorted_indices2] = sort(values_path2, 'descend');
+    
+    % Ottieni gli indici originali ordinati
+    jobs_path1 = indices_path1(sorted_indices1);
+    jobs_path2 = indices_path2(sorted_indices2);
+    
+
+
+    % Check if any jobs are not assigned
+    if isempty(jobs_path1) || isempty(jobs_path2)
+        combined_makespan = inf; % if one of the two paths does not have any assigned jobs, the function returns an infinite makespan, reporting an invalid solution 
+        return;
+    end
+
+    % calculate combined makespan, it is determined by the path which takes longer
+    combined_makespan = calculate_makespan(processing_times, jobs_path1,jobs_path2, [1, 3, 5],[2, 4, 5]);
 end
 
 function makespan = calculate_makespan(processing_times, sequence_path1,sequence_path2,machines_path1,machines_path2)
